@@ -1,7 +1,7 @@
 <?php
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
-$conn = mysqli_connect("localhost","root","","seafood");
+$conn = mysqli_connect("localhost","root","","seafood1");
 
 function registrasi($data) {
     global $conn;
@@ -39,4 +39,64 @@ function registrasi($data) {
 
     
 }
+
+function bayar($data){
+    global $conn;
+    $id_pemesanan = $_GET["id"];
+    $jenis = $data["jenis"];
+    $total = $data["total_harga"];
+
+    $bukti = upload();
+    if (!$bukti) {
+      return false;
+    }
+    
+    $query ="INSERT INTO pembayaran(`id_pemesanan`,`bukti_pembayaran`,`jenis_pembayaran`,`total_pembayaran`)
+    VALUES('$id_pemesanan','$bukti','$jenis',$total)";
+    mysqli_query($conn,$query);
+
+    return mysqli_affected_rows($conn);
+  }
+  function upload(){
+    $namafile = $_FILES['gambar']['name'];
+    $ukuranfile =$_FILES['gambar']['size'];
+    $error = $_FILES['gambar']['error'];
+    $tmpname = $_FILES['gambar']['tmp_name'];
+
+    if ($error === 4) {
+      echo "<script>
+            alert('harap upload bukti pembayaran!!');
+        </script>";
+        return false;
+    }
+
+    $ekstensi =['jpg','jpeg','png'];
+    $ekstensigambar = explode('.', $namafile);
+    $ekstensigambar = strtolower(end($ekstensigambar));
+
+    if (!in_array($ekstensigambar,$ekstensi)) {
+      echo "<script>
+        alert('Silahkan upload sesuai ekstensi yang ada');
+      </script>";
+      return false;
+    }
+
+    //cek ukuran gambar
+    if ($ukuranfile > 3000000) {
+      echo "<script>
+      alert('Ukuran terlalu besar!');
+      </script>";
+      return false;
+    }
+
+    //generate nama file baru
+    $namafilebaru = uniqid();
+    $namafilebaru .= '.';
+    $namafilebaru.= $ekstensigambar;
+    // lolos pengecekan
+    move_uploaded_file($tmpname,'assets/img/bukti' . $namafilebaru);
+
+    return $namafilebaru;
+
+  }
 ?>

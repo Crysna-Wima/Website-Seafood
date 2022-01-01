@@ -1,9 +1,9 @@
-<?php 
-require 'functions.php';
+<?php
 session_start();
+require 'functions.php';
 
 if(!isset($_SESSION["login"])) {
-  header("Location: auth-login.php");
+    header("Location: auth-login.php");
 }
 
 //mendapatkan data user
@@ -11,12 +11,10 @@ $id = $_SESSION["login"];
 $result = mysqli_query($conn, "SELECT * FROM calon_konsumen WHERE id_calon_konsumen = '$id'");
 $row = mysqli_fetch_assoc($result);
 
-$barang = mysqli_query($conn, "SELECT a.*, b.*, c.*, d.*, e.*
-FROM `penawaran` a JOIN `katalog_barang` b ON a.`id_katalog`=b.`id_katalog`
-JOIN `detail_katalog` c ON b.`id_katalog` = c.`id_katalog`
-JOIN `barang` d ON c.`id_barang` = d.`id_barang`
-JOIN `jenis_barang` e ON d.`id_jenis` = e.`id_jenis`");
-
+if(empty($_SESSION["keranjang" ]) OR !isset($_SESSION["keranjang"])) {
+   echo "<script>alert('keranjang kosong, silahkan belanja dulu');</script>";
+   echo "<script>location='index.php';</script>";
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -264,7 +262,7 @@ JOIN `jenis_barang` e ON d.`id_jenis` = e.`id_jenis`");
       <nav class="navbar navbar-secondary navbar-expand-lg">
         <div class="container">
           <ul class="navbar-nav">
-            <li class="nav-item active">
+            <li class="nav-item">
               <a href="index.php" class="nav-link"><i class="fas fa-fire"></i><span>Dashboard</span></a>
             </li>
             <li class="nav-item">
@@ -279,7 +277,7 @@ JOIN `jenis_barang` e ON d.`id_jenis` = e.`id_jenis`");
             <li class="nav-item">
               <a href="#" class="nav-link"><i class="fas fa-money-bill-wave-alt"></i><span>Pembayaran</span></a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item active">
               <a href="keranjang.php" class="nav-link" style="margin-left:400px;"><i class="fas fa-shopping-cart"></i><span>Keranjang Belanja</span></a>
             </li>
           </ul>
@@ -290,60 +288,74 @@ JOIN `jenis_barang` e ON d.`id_jenis` = e.`id_jenis`");
       <div class="main-content">
         <section class="section">
           <div class="section-header">
-            <h1>Dashboard</h1>
+            <h1>Keranjang Belanja</h1>
             <div class="section-header-breadcrumb">
-              <div class="breadcrumb-item active"><a href="index.php">Dashboard/</a></div>
+              <div class="breadcrumb-item active"><a href="keranjang.php">Dashboard/Keranjang Belanja</a></div>
             </div>
           </div>
-
         </section>
         <section>
-        <div class="row">
-          <?php while($row = mysqli_fetch_assoc($barang)) : ?>
-              <div class="col-12 col-sm-6 col-md-6 col-lg-3">
-                <article class="article container">
-                  <div class="article-header">
-                    <div class="article-image" data-background="assets/img/<?= $row["gambar_barang"] ?>">
-                      <div class="overlay">
-                        <?= $row["nama_barang"] ?>
-                      </div>
-                      <style>
-                        .overlay {
-                        position: absolute;
-                        bottom: 0;
-                        background: rgb(0, 0, 0);
-                        background: rgba(0, 0, 0, 0.5); /* Black see-through */
-                        color: #f1f1f1;
-                        width: 100%;
-                        transition: .5s ease;
-                        opacity:0;
-                        color: white;
-                        font-size: 20px;
-                        padding: 20px;
-                        text-align: center;
-                      }
+            <div class="card">
+                <div class="card-header">
+                <h4>Daftar belanja</h4>
+                </div>
+                <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-striped table-md">
+                        <tr>
+                            <th>No</th>
+                            <th>Nama Barang</th>
+                            <th>Harga</th>
+                            <th>Jumlah</th>
+                            <th>Sub Harga</th>
+                            <th>Aksi</th>
+                        </tr>
+                        <?php $nomor = 1; ?>
+                        <?php foreach ($_SESSION["keranjang"] as $id_produk => $jumlah): ?>
+                        <?php 
+                        $barang = $conn->query("SELECT a.*, b.*, c.*, d.*, e.*
+                        FROM `penawaran` a JOIN `katalog_barang` b ON a.`id_katalog`=b.`id_katalog`
+                        JOIN `detail_katalog` c ON b.`id_katalog` = c.`id_katalog`
+                        JOIN `barang` d ON c.`id_barang` = d.`id_barang`
+                        JOIN `jenis_barang` e ON d.`id_jenis` = e.`id_jenis` WHERE d.`id_barang` = '$id_produk'");
+                        $row = $barang->fetch_assoc();
+                        $subharga = $row["harga_jual"]*$jumlah;
+                        ?>
+                        <tr>
+                            <td><?=$nomor?></td>
+                            <td><?= $row["nama_barang"] ?></td>
+                            <td>Rp. <?=number_format($row["harga_jual"]) ?></td>
+                            <td><?= $jumlah?></td>
+                            <td>Rp. <?= number_format($subharga) ?></td>
+                            <td><a href="hapuskeranjang.php?id=<?= $id_produk?>" class="btn btn-danger btn-xs">Hapus</a></td>
+                        </tr>
+                        <?php $nomor++; ?>
+                        <?php endforeach ?>
+                    </table>
+                </div>
+                </div>
+                <div class="card-footer text-right">
+                <nav class="d-inline-block">
+                    <ul class="pagination mb-0">
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" tabindex="-1"><i class="fas fa-chevron-left"></i></a>
+                    </li>
+                    <li class="page-item active"><a class="page-link" href="#">1 <span class="sr-only">(current)</span></a></li>
+                    <li class="page-item">
+                        <a class="page-link" href="#">2</a>
+                    </li>
+                    <li class="page-item"><a class="page-link" href="#">3</a></li>
+                    <li class="page-item">
+                        <a class="page-link" href="#"><i class="fas fa-chevron-right"></i></a>
+                    </li>
+                    </ul>
+                </nav>
+                </div>
+                <div class="text-center mb-4">
+                    <a href="index.php" class="btn btn-secondary">Lanjutkan Belanja</a>
+                    <a href="checkout.php" class="btn btn-success">Check Out</a>
 
-                      /* When you mouse over the container, fade in the overlay title */
-                      .container:hover .overlay {
-                        opacity: 1;
-                      }
-                      </style>
-                    </div>
-                  </div>
-                  <div class="article-details">
-                    <p>
-                    Stok  : <?= $row["stok_barang"] ?> <br>
-                    Berat : <?= $row["berat_barang"] ?> <br>
-                    Harga : Rp. <?= number_format($row["harga_jual"]) ?> <br>
-                    Jenis : <?= $row["nama_jenis"] ?>
-                    </p>
-                    <div class="article-cta">
-                      <a href="pemesanan.php?id=<?= $row["id_barang"]?>" class="btn btn-primary">Pesan Sekarang</a>
-                    </div>
-                  </div>
-                </article>
-              </div>
-          <?php endwhile; ?>
+                </div>
             </div>
         </section>
       </div>

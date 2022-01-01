@@ -1,21 +1,28 @@
-<?php 
-require 'functions.php';
+<?php
 session_start();
+require 'functions.php';
 
 if(!isset($_SESSION["login"])) {
-  header("Location: auth-login.php");
+    header("Location: auth-login.php");
 }
 
 //mendapatkan data user
 $id = $_SESSION["login"];
 $result = mysqli_query($conn, "SELECT * FROM calon_konsumen WHERE id_calon_konsumen = '$id'");
 $row = mysqli_fetch_assoc($result);
+ 
+$nota = mysqli_query($conn,"SELECT a.*, b.*
+FROM `pemesanan` a JOIN `calon_konsumen` b
+ON a.`id_calon_konsumen` = b.`id_calon_konsumen`
+WHERE `id_pemesanan` = '$_GET[id]'");
+$notap = mysqli_fetch_assoc($nota);
 
-$barang = mysqli_query($conn, "SELECT a.*, b.*, c.*, d.*, e.*
-FROM `penawaran` a JOIN `katalog_barang` b ON a.`id_katalog`=b.`id_katalog`
-JOIN `detail_katalog` c ON b.`id_katalog` = c.`id_katalog`
-JOIN `barang` d ON c.`id_barang` = d.`id_barang`
-JOIN `jenis_barang` e ON d.`id_jenis` = e.`id_jenis`");
+$barang = mysqli_query($conn,"SELECT a.*, b.*
+FROM `detail_pemesanan` a JOIN `barang` b
+ON a.`id_barang` = b.`id_barang`
+WHERE a.`id_pemesanan` = '$_GET[id]'");
+
+$nomor =1;
 
 ?>
 <!DOCTYPE html>
@@ -264,13 +271,13 @@ JOIN `jenis_barang` e ON d.`id_jenis` = e.`id_jenis`");
       <nav class="navbar navbar-secondary navbar-expand-lg">
         <div class="container">
           <ul class="navbar-nav">
-            <li class="nav-item active">
+            <li class="nav-item">
               <a href="index.php" class="nav-link"><i class="fas fa-fire"></i><span>Dashboard</span></a>
             </li>
             <li class="nav-item">
               <a class="nav-link"><i class="fas fa-arrow-right" style="color: #0d6efd; cursor: default;"></i><span></span></a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item active">
               <a href="#" class="nav-link"><i class="fas fa-paper-plane"></i><span>Pemesanan</span></a>
             </li>
             <li class="nav-item">
@@ -290,60 +297,61 @@ JOIN `jenis_barang` e ON d.`id_jenis` = e.`id_jenis`");
       <div class="main-content">
         <section class="section">
           <div class="section-header">
-            <h1>Dashboard</h1>
+            <h1>Nota Pemesanan</h1>
             <div class="section-header-breadcrumb">
-              <div class="breadcrumb-item active"><a href="index.php">Dashboard/</a></div>
+              <div class="breadcrumb-item active"><a href="checkout.php">Dashboard/Checkout</a></div>
             </div>
           </div>
-
         </section>
         <section>
-        <div class="row">
-          <?php while($row = mysqli_fetch_assoc($barang)) : ?>
-              <div class="col-12 col-sm-6 col-md-6 col-lg-3">
-                <article class="article container">
-                  <div class="article-header">
-                    <div class="article-image" data-background="assets/img/<?= $row["gambar_barang"] ?>">
-                      <div class="overlay">
-                        <?= $row["nama_barang"] ?>
-                      </div>
-                      <style>
-                        .overlay {
-                        position: absolute;
-                        bottom: 0;
-                        background: rgb(0, 0, 0);
-                        background: rgba(0, 0, 0, 0.5); /* Black see-through */
-                        color: #f1f1f1;
-                        width: 100%;
-                        transition: .5s ease;
-                        opacity:0;
-                        color: white;
-                        font-size: 20px;
-                        padding: 20px;
-                        text-align: center;
-                      }
+            <div class="card">
+                <div class="card-header">
+                <h4>Nota Pemesanan</h4>
+                </div>
+                <div class="card-body">
+                  <p style="font-size: larger;">Nama Customer&emsp;&emsp;&emsp;&emsp;: <?=$notap["nama_calon_konsumen"]?></p>
+                  <p style="font-size: larger;">Email Customer&emsp;&emsp;&emsp;&emsp;: <?=$notap["email_calon_konsumen"]?></p>
+                  <p style="font-size: larger;">Alamat&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&ensp;: <?=$notap["alamat_pengiriman"]?></p>
+                  <p style="font-size: larger;">Tanggal Pemesanan&emsp;&emsp;: <?=$notap["tgl_pemesanan"]?></p>
+                  <p style="font-size: larger;">Total Harga&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;: Rp. <?=number_format($notap["total_harga"]) ?></p> <br><br>
 
-                      /* When you mouse over the container, fade in the overlay title */
-                      .container:hover .overlay {
-                        opacity: 1;
-                      }
-                      </style>
+                  <div class="table-responsive">
+                    <table class="table table-striped table-md">
+                      <tr>
+                        <th>No</th>
+                        <th>Nama Barang</th>
+                        <th>Harga</th>
+                        <th>Jumlah</th>
+                        <th>Sub Harga</th>
+                      </tr>
+                      <?php while($detail = mysqli_fetch_assoc($barang)) : ?>
+                      <tr>
+                        <td><?=$nomor?></td>
+                        <td><?=$detail["nama_barang"]?></td>
+                        <td>Rp. <?=number_format($detail["harga_jual"])?></td>
+                        <td><?=$detail["total_berat"]?></td>
+                        <td>Rp. <?=$detail["sub_total"]?></td>
+                      </tr>
+                      <?php $nomor++; ?>
+                      <?php endwhile;?>
+                    </table>
+                  </div>
+
+                </div>
+                <div class="card-footer bg-whitesmoke" style="padding: 0px;">
+                  <div class="alert alert-primary">
+                    <div class="row">
+                      <div class="col-md-6">
+                        Silahkan melakukan pembayaran sejumlah Rp. <?=number_format($notap["total_harga"]) ?>
+                      </div>
+                      <div class="col-md-6">
+                        <div style="margin-left: 400px;">
+                        <a href="bayar.php?id=<?=$notap["id_pemesanan"]?>" class="btn" style="background-color: green;">Bayar</a>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div class="article-details">
-                    <p>
-                    Stok  : <?= $row["stok_barang"] ?> <br>
-                    Berat : <?= $row["berat_barang"] ?> <br>
-                    Harga : Rp. <?= number_format($row["harga_jual"]) ?> <br>
-                    Jenis : <?= $row["nama_jenis"] ?>
-                    </p>
-                    <div class="article-cta">
-                      <a href="pemesanan.php?id=<?= $row["id_barang"]?>" class="btn btn-primary">Pesan Sekarang</a>
-                    </div>
-                  </div>
-                </article>
-              </div>
-          <?php endwhile; ?>
+                </div>
             </div>
         </section>
       </div>

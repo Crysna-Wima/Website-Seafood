@@ -1,21 +1,35 @@
-<?php 
-require 'functions.php';
+<?php
 session_start();
+require 'functions.php';
 
 if(!isset($_SESSION["login"])) {
-  header("Location: auth-login.php");
+    header("Location: auth-login.php");
 }
 
 //mendapatkan data user
 $id = $_SESSION["login"];
 $result = mysqli_query($conn, "SELECT * FROM calon_konsumen WHERE id_calon_konsumen = '$id'");
 $row = mysqli_fetch_assoc($result);
+ 
+$nota = mysqli_query($conn,"SELECT a.*, b.*
+FROM `pemesanan` a JOIN `calon_konsumen` b
+ON a.`id_calon_konsumen` = b.`id_calon_konsumen`
+WHERE `id_pemesanan` = '$_GET[id]'");
+$notap = mysqli_fetch_assoc($nota);
 
-$barang = mysqli_query($conn, "SELECT a.*, b.*, c.*, d.*, e.*
-FROM `penawaran` a JOIN `katalog_barang` b ON a.`id_katalog`=b.`id_katalog`
-JOIN `detail_katalog` c ON b.`id_katalog` = c.`id_katalog`
-JOIN `barang` d ON c.`id_barang` = d.`id_barang`
-JOIN `jenis_barang` e ON d.`id_jenis` = e.`id_jenis`");
+
+if (isset($_POST["bayar"])) {
+  if (bayar($_POST)>0) {
+    echo "<script>
+            alert('pembayaran berhasil ditambahkan. silahkan tunggu admin untuk mengkonfirmasinya');
+            document.location.href = 'index.php';
+        </script>";
+  }else{
+    echo "<script>
+            alert('pembayaran gagal ditambahkan. silahkan coba kembali');
+        </script>";
+  }
+}
 
 ?>
 <!DOCTYPE html>
@@ -264,19 +278,19 @@ JOIN `jenis_barang` e ON d.`id_jenis` = e.`id_jenis`");
       <nav class="navbar navbar-secondary navbar-expand-lg">
         <div class="container">
           <ul class="navbar-nav">
-            <li class="nav-item active">
+            <li class="nav-item">
               <a href="index.php" class="nav-link"><i class="fas fa-fire"></i><span>Dashboard</span></a>
             </li>
             <li class="nav-item">
               <a class="nav-link"><i class="fas fa-arrow-right" style="color: #0d6efd; cursor: default;"></i><span></span></a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item ">
               <a href="#" class="nav-link"><i class="fas fa-paper-plane"></i><span>Pemesanan</span></a>
             </li>
             <li class="nav-item">
               <a class="nav-link"><i class="fas fa-arrow-right" style="color: #0d6efd; cursor: default;"></i><span></span></a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item active">
               <a href="#" class="nav-link"><i class="fas fa-money-bill-wave-alt"></i><span>Pembayaran</span></a>
             </li>
             <li class="nav-item">
@@ -290,61 +304,62 @@ JOIN `jenis_barang` e ON d.`id_jenis` = e.`id_jenis`");
       <div class="main-content">
         <section class="section">
           <div class="section-header">
-            <h1>Dashboard</h1>
+            <h1>Pembayaran</h1>
             <div class="section-header-breadcrumb">
-              <div class="breadcrumb-item active"><a href="index.php">Dashboard/</a></div>
+              <div class="breadcrumb-item active"><a href="checkout.php">Dashboard/pembayaran</a></div>
             </div>
           </div>
-
         </section>
         <section>
-        <div class="row">
-          <?php while($row = mysqli_fetch_assoc($barang)) : ?>
-              <div class="col-12 col-sm-6 col-md-6 col-lg-3">
-                <article class="article container">
-                  <div class="article-header">
-                    <div class="article-image" data-background="assets/img/<?= $row["gambar_barang"] ?>">
-                      <div class="overlay">
-                        <?= $row["nama_barang"] ?>
-                      </div>
-                      <style>
-                        .overlay {
-                        position: absolute;
-                        bottom: 0;
-                        background: rgb(0, 0, 0);
-                        background: rgba(0, 0, 0, 0.5); /* Black see-through */
-                        color: #f1f1f1;
-                        width: 100%;
-                        transition: .5s ease;
-                        opacity:0;
-                        color: white;
-                        font-size: 20px;
-                        padding: 20px;
-                        text-align: center;
-                      }
-
-                      /* When you mouse over the container, fade in the overlay title */
-                      .container:hover .overlay {
-                        opacity: 1;
-                      }
-                      </style>
-                    </div>
-                  </div>
-                  <div class="article-details">
-                    <p>
-                    Stok  : <?= $row["stok_barang"] ?> <br>
-                    Berat : <?= $row["berat_barang"] ?> <br>
-                    Harga : Rp. <?= number_format($row["harga_jual"]) ?> <br>
-                    Jenis : <?= $row["nama_jenis"] ?>
-                    </p>
-                    <div class="article-cta">
-                      <a href="pemesanan.php?id=<?= $row["id_barang"]?>" class="btn btn-primary">Pesan Sekarang</a>
-                    </div>
-                  </div>
-                </article>
-              </div>
-          <?php endwhile; ?>
+          <div class="card">
+            <div class="card-header">
+              <h4 class="card-title">Pembayaran</h4>
             </div>
+            <div class="card-body">
+              <form action="" method="POST" enctype="multipart/form-data">
+              <div class="row">
+                <div class="col-6">
+                <p style="font-size: larger;">Nama Customer&emsp;&emsp;&emsp;&emsp;: <?=$notap["nama_calon_konsumen"]?></p>
+                  <p style="font-size: larger;">Email Customer&emsp;&emsp;&emsp;&emsp;: <?=$notap["email_calon_konsumen"]?></p>
+                  <p style="font-size: larger;">Total Harga&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;: Rp. <?=number_format($notap["total_harga"]) ?></p> <br><br>
+                  <input type="hidden" class="custom-file-input" id="customFile" name="total_harga" value="<?=$notap["total_harga"]?>">
+                  <p style="font-size: larger;">Jenis Pembayaran&emsp;&emsp;&emsp;&emsp;:</p>
+                  <select class="form-control selectric" name="jenis" required>
+                    <option value="OVO">OVO</option>
+                    <option value="Dana">DANA</option>
+                    <option value="Bank Mandiri">Bank Mandiri</option>
+                    <option value="Bank BCA">Bank BCA</option>
+                    <option value="Bank BRI">Bank BRI</option>
+                  </select> <br> <br>
+                  <p style="font-size: larger;">Bukti Pembayaran&emsp;&emsp;&emsp;&emsp;:</p>
+                  <div class="custom-file mb-3">
+                    <input type="file" class="custom-file-input" id="gambar" name="gambar">
+                    <label class="custom-file-label" for="customFile"><p>Pilih file</p></label>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="row" style="color: #0d6efd;">
+                    <div class="col-3">
+                      <p><strong>OVO</strong></p>
+                      <p><strong>DANA</strong></p>
+                      <p><strong>Bank Mandiri</strong></p>
+                      <p><strong>Bank BCA</strong></p>
+                      <p><strong>Bank BRI</strong></p>
+                    </div>
+                    <div class="col-6">
+                      <p>: 08123456789</p>
+                      <p>: 08123456789</p>
+                      <p>: 123-456789-987 <strong>AN. Crysna Wima</strong></p>
+                      <p>: 123-456789-987 <strong>AN. Crysna Wima</strong></p>
+                      <p>: 123-456789-987 <strong>AN. Crysna Wima</strong></p>
+                    </div>
+                  </div>
+                </div>
+                <button type="submit" name="bayar" class="btn btn-success" style="margin: auto; margin-top: 30px; margin-bottom: 30px;">Kirim</button>
+              </div>
+              </form>
+            </div>
+          </div>
         </section>
       </div>
       <footer class="main-footer">
