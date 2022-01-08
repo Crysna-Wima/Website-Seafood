@@ -6,16 +6,13 @@ if(!isset($_SESSION["login"])) {
   header("Location: auth-login.php");
 }
 
+$barang = mysqli_query($conn, "SELECT * FROM daftar_barang");
+
 //mendapatkan data user
 $id = $_SESSION["login"];
-$result = mysqli_query($conn, "SELECT * FROM calon_konsumen WHERE id_calon_konsumen = '$id'");
-$row = mysqli_fetch_assoc($result);
+$result = mysqli_query($conn, "CALL data_konsumen('CK0001')");
+$row1 = mysqli_fetch_assoc($result);
 
-$barang = mysqli_query($conn, "SELECT a.*, b.*, c.*, d.*, e.*
-FROM `penawaran` a JOIN `katalog_barang` b ON a.`id_katalog`=b.`id_katalog`
-JOIN `detail_katalog` c ON b.`id_katalog` = c.`id_katalog`
-JOIN `barang` d ON c.`id_barang` = d.`id_barang`
-JOIN `jenis_barang` e ON d.`id_jenis` = e.`id_jenis`");
 
 ?>
 <!DOCTYPE html>
@@ -23,7 +20,7 @@ JOIN `jenis_barang` e ON d.`id_jenis` = e.`id_jenis`");
 <head>
   <meta charset="UTF-8">
   <meta content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no" name="viewport">
-  <title>Layout &rsaquo; Top Navigation &mdash; Stisla</title>
+  <title>Home &mdash; SEAFOOD</title>
 
   <!-- General CSS Files -->
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
@@ -240,7 +237,7 @@ JOIN `jenis_barang` e ON d.`id_jenis` = e.`id_jenis`");
           </li>
           <li class="dropdown"><a href="#" data-toggle="dropdown" class="nav-link dropdown-toggle nav-link-lg nav-link-user">
             <img alt="image" src="assets/img/avatar/avatar-1.png" class="rounded-circle mr-1">
-            <div class="d-sm-none d-lg-inline-block">Hi, <?= $row['nama_calon_konsumen'] ?></div></a>
+            <div class="d-sm-none d-lg-inline-block">Hi, <?= $row1['nama_calon_konsumen'] ?></div></a>
             <div class="dropdown-menu dropdown-menu-right">
               <div class="dropdown-title">Logged in 5 min ago</div>
               <a href="features-profile.html" class="dropdown-item has-icon">
@@ -332,9 +329,9 @@ JOIN `jenis_barang` e ON d.`id_jenis` = e.`id_jenis`");
                   </div>
                   <div class="article-details">
                     <p>
-                    Stok  : <?= $row["stok_barang"] ?> <br>
-                    Berat : <?= $row["berat_barang"] ?> <br>
-                    Harga : Rp. <?= number_format($row["harga_jual"]) ?> <br>
+                    Harga : <strong style="color: #0d6efd;"> Rp. <?= number_format($row["harga_jual"]) ?></strong> <br>
+                    Stok  : <?= $row["stok_barang"] ?> kg<br>
+                    Berat : <?= $row["berat_barang"] ?> kg <br>
                     Jenis : <?= $row["nama_jenis"] ?>
                     </p>
                     <div class="article-cta">
